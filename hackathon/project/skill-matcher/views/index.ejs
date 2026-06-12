@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>SkillConnect</title>
+    <style>
+        /* UPDATED BACKGROUND TO SOLID TEAL */
+        body { 
+            background-color: #e6fffa; /* LIGHT TEAL */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh; 
+            margin: 0; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative;
+        }
+
+        /* CARD STYLING */
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        h1 {
+            color: #2563eb;
+            font-size: 3rem;
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+
+        p {
+            color: #374151;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 15px 20px;
+            margin: 10px 0;
+            font-size: 1.1rem;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* Worker Button (Blue) */
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Client Button (Teal) */
+        .btn-secondary {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        .link {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            text-decoration: none;
+        }
+        .link:hover {
+            text-decoration: underline;
+            color: #2563eb;
+        }
+
+        /* RESPONSIVE MOBILE */
+        @media (max-width: 600px) {
+            h1 { font-size: 2.2rem; }
+            .card { padding: 30px; margin: 20px; width: 90%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div style="font-size: 60px; margin-bottom: 10px;">🛠️</div>
+            <h1>SkillConnect</h1>
+            <p>Connecting local skills with local needs.</p>
+            
+            <div style="margin-top: 30px;">
+                <a href="/login/worker" class="btn btn-primary">I am a Worker</a>
+                <a href="/login/client" class="btn btn-secondary">I am a Client</a>
+            </div>
+
+            <a href="/" class="link">Back to Home</a>
+        </div>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Worker Login</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e6fffa; /* LIGHT TEAL APPLIED */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        h3 {
+            color: #555;
+            margin-top: 0;
+            margin-bottom: 25px;
+            font-size: 22px;
+        }
+
+        /* Form Elements */
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff; /* Standard Blue */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button.btn-success {
+            background-color: #28a745; /* Standard Green */
+        }
+
+        button.btn-success:hover {
+            background-color: #218838;
+        }
+
+        .divider {
+            margin: 30px 0;
+            border-bottom: 1px solid #eee;
+            position: relative;
+        }
+
+        .divider span {
+            background-color: #e6fffa; /* Matches body bg for label */
+            padding: 0 10px;
+            color: #888;
+            font-size: 14px;
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .error {
+            color: #d9534f;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- LOGIN CARD -->
+        <div class="card">
+            <h2>Worker Portal</h2>
+            <h3>Login</h3>
+            
+            <% if (error) { %>
+                <div class="error"><%= error %></div>
+            <% } %>
+
+            <form action="/login/worker" method="POST">
+                <input type="text" name="name" placeholder="Enter your registered name" required>
+                <button type="submit">Login</button>
+            </form>
+            
+            <a href="/" class="back-link">Back to Home</a>
+        </div>
+
+        <!-- DIVIDER -->
+        <div class="divider">
+            <span>New Worker?</span>
+        </div>
+
+        <!-- REGISTRATION CARD -->
+        <div class="card">
+            <h3>Create Profile</h3>
+            <form action="/register" method="POST">
+                <input type="text" name="name" placeholder="Full Name" required>
+                
+                <select id="tradeSelect" name="trade" onchange="toggleOtherInput()" required>
+                    <option value="" disabled selected>Select your Trade</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Laundry">Laundry</option>
+                    <option value="Carpentry">Carpentry</option>
+                    <option value="Other">Other (Specify below)</option>
+                </select>
+
+                <!-- Hidden input for "Other" trade -->
+                <div id="otherTradeDiv" style="display:none;">
+                    <input type="text" name="otherTrade" placeholder="Please specify your trade">
+                </div>
+
+                <input type="number" name="rate" placeholder="Rate (e.g. 500)" required>
+                <select name="rateType">
+                    <option value="Per Hour">Per Hour</option>
+                    <option value="Per Day">Per Day</option>
+                </select>
+                
+                <input type="text" name="locality" placeholder="Locality / Landmark" required>
+                <input type="tel" name="phone" placeholder="Phone Number" required>
+                
+                <textarea name="qualification" rows="3" placeholder="Experience / Qualification (Optional)"></textarea>
+                
+                <button type="submit" class="btn-success">Register</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleOtherInput() {
+            const tradeSelect = document.getElementById('tradeSelect');
+            const otherInputDiv = document.getElementById('otherTradeDiv');
+            
+            // If "Other" is selected, show the text box; otherwise hide it
+            if (tradeSelect.value === 'Other') {
+                otherInputDiv.style.display = 'block';
+            } else {
+                otherInputDiv.style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+</html>

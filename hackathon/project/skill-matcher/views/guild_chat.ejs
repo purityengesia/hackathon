@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Guild Chat</title>
+    <style>
+        body { font-family: sans-serif; background-color: #e5ddd5; margin: 0; padding: 0; }
+        .chat-container { max-width: 600px; margin: 0 auto; height: 100vh; background: white; display: flex; flex-direction: column; border-left: 1px solid #ddd; border-right: 1px solid #ddd; }
+        
+        /* Header */
+        .chat-header { background: #075e54; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .chat-header a { color: white; text-decoration: none; }
+        
+        /* Messages Area */
+        .messages { flex: 1; padding: 20px; overflow-y: auto; background-image: url('https://www.transparenttextures.com/patterns/cubes.png'); background-color: #e5ddd5; }
+        
+        .msg { margin-bottom: 10px; clear: both; }
+        .msg-bubble { padding: 8px 12px; border-radius: 7px; max-width: 75%; position: relative; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .msg-sender { font-size: 0.75rem; color: #999; margin-bottom: 2px; }
+        
+        /* My messages (Right) */
+        .msg.mine { float: right; }
+        .msg.mine .msg-bubble { background: #dcf8c6; float: right; }
+        
+        /* Others messages (Left) */
+        .msg.theirs { float: left; }
+        .msg.theirs .msg-bubble { background: white; float: left; }
+        
+        /* Input Area */
+        .chat-input { padding: 10px; background: #f0f0f0; display: flex; gap: 10px; }
+        .chat-input input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; outline: none; }
+        .chat-input button { background: #075e54; color: white; border: none; padding: 0 20px; border-radius: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div>
+                <strong>🛠️ <%= user.trade %> Guild</strong><br>
+                <small>Group Chat</small>
+            </div>
+            <a href="/dashboard/worker">Back to Dashboard</a>
+        </div>
+
+        <div class="messages">
+            <% if (messages.length === 0) { %>
+                <div style="text-align:center; color:#777; margin-top:50px;">
+                    No messages yet.<br>
+                    Coordinate with other <%= user.trade %>s here!
+                </div>
+            <% } %>
+
+            <% messages.forEach(msg => { %>
+                <div class="msg <%= msg.senderName === user.name ? 'mine' : 'theirs' %>">
+                    <% if (msg.senderName !== user.name) { %>
+                        <div class="msg-sender"><%= msg.senderName %></div>
+                    <% } %>
+                    <div class="msg-bubble">
+                        <%= msg.text %>
+                    </div>
+                    <div style="font-size:0.6rem; color:#aaa; clear:both; margin-top:2px;">
+                        <%= msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+
+        <form action="/api/send-guild-message" method="POST" class="chat-input">
+            <input type="text" name="text" placeholder="Type a message..." autocomplete="off" required>
+            <button type="submit">➤</button>
+        </form>
+    </div>
+</body>
+</html>

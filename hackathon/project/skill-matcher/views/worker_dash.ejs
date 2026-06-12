@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Worker Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background-color: #e6fffa; /* LIGHT TEAL APPLIED */ margin: 0; padding: 0; min-height: 100vh; }
+        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; width: 100%; font-size: 1rem; }
+        .btn-success { background-color: #10b981; }
+        .btn-danger { background-color: #ef4444; }
+        .btn-secondary { background-color: #6b7280; width: auto; }
+        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
+        
+        .voice-recorder-area { margin-top: 10px; text-align: center; padding: 10px; background: #f9fafb; border-radius: 8px; border: 1px dashed #d1d5db; }
+        .mic-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background-color: #e5e7eb; color: #374151; font-size: 20px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; user-select: none; }
+        .mic-btn.recording { background-color: #ef4444; color: white; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .helper-text { display: block; margin-top: 5px; font-size: 0.8rem; color: #6b7280; }
+        audio { width: 100%; margin-top: 10px; display: none; }
+        
+        .badge { background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
+        .verified { background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; }
+        .lang-switch { font-size: 0.8rem; cursor: pointer; text-decoration: underline; color: white; margin-right: 15px; }
+        .marketplace-badge { background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+    </style>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <header style="background-color:#10b981; padding: 15px; display:flex; justify-content:space-between; align-items:center; color:white;">
+        <h2 style="margin:0;" data-i18n="workerDashboard">WORKER DASHBOARD</h2>
+        <div>
+            <span id="langBtn" onclick="toggleLang()" class="lang-switch">Switch to Swahili</span>
+            <a href="/" style="color:white; text-decoration:none; font-size:0.9em;" data-i18n="logout">Logout</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- PROFILE CARD -->
+        <div class="card" style="background:<%= user.isAvailable ? '#ecfdf5' : '#f3f4f6' %>; border:1px solid <%= user.isAvailable ? '#10b981' : '#d1d5db' %>;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <h3 style="margin-top:0; margin-bottom:5px;" data-i18n="myProfile">My Profile</h3>
+                    <div style="margin-bottom:10px;">
+                        <% if (user.rating >= 4.5) { %><span class="verified">✅ Top Rated</span><% } %>
+                        <% if (user.isAvailable) { %><span style="background:#dcfce7; color:#166534; padding:2px 6px; border-radius:4px; font-size:0.7rem;" data-i18n="online">🟢 Online</span><% } else { %><span style="background:#fee2e2; color:#991b1b; padding:2px 6px; border-radius:4px; font-size:0.7rem;" data-i18n="offline">🔴 Offline</span><% } %>
+                        <span style="color:#fbbf24; font-weight:bold; font-size:0.8rem; margin-left:5px;">⭐ <%= user.rating.toFixed(1) %></span>
+                    </div>
+                </div>
+                <form action="/toggle-availability" method="POST">
+                    <button type="submit" class="btn-secondary" style="font-size:0.8rem; padding:5px 10px;">
+                        <%= user.isAvailable ? 'Go Offline' : 'Go Online' %>
+                    </button>
+                </form>
+            </div>
+            <p><strong data-i18n="trade">Trade:</strong> <%= user.trade %></p>
+            <p><strong data-i18n="locality">Locality:</strong> <%= user.locality %></p>
+            <p><strong data-i18n="rate">Rate:</strong> Ksh <%= user.rate %> <%= user.rateType %></p>
+            
+            <div style="margin-top:15px; padding-top:15px; border-top:1px solid #ddd;">
+                <a href="/guild-chat" style="display:block; text-align:center; background:#25D366; color:white; padding:12px; border-radius:8px; text-decoration:none; font-weight:bold; box-shadow: 0 2px 5px rgba(0,0,0,0.1);" data-i18n="joinChat">
+                    💬 Join <%= user.trade %> Group Chat
+                </a>
+                <small style="display:block; text-align:center; color:#666; margin-top:5px;" data-i18n="chatSubtitle">Coordinate with other workers</small>
+            </div>
+            <div style="margin-top:15px;">
+                <button onclick="toggleEditForm()" class="btn-secondary" style="width:100%" data-i18n="editDetails">Edit Details</button>
+            </div>
+        </div>
+
+        <!-- HIDDEN EDIT FORM -->
+        <div id="editForm" class="card" style="display:none; border: 2px dashed #2563eb;">
+            <h3 data-i18n="updateProfile">Update Profile</h3>
+            <form action="/update-profile" method="POST">
+                <input type="text" name="name" value="<%= user.name %>" required>
+                <select id="editTradeSelect" name="trade" onchange="toggleOtherInput()" required>
+                    <option value="Plumbing" <%= user.trade==='Plumbing'?'selected':''%>>Plumbing</option>
+                    <option value="Electrical" <%= user.trade==='Electrical'?'selected':''%>>Electrical</option>
+                    <option value="Laundry" <%= user.trade==='Laundry'?'selected':''%>>Laundry</option>
+                    <option value="Other">Other</option>
+                </select>
+                <div id="editOtherDiv" style="display:none;">
+                    <input type="text" name="otherTrade" placeholder="Specify Trade" />
+                </div>
+                <input type="number" name="rate" value="<%= user.rate %>" required>
+                <input type="text" name="locality" value="<%= user.locality %>" required>
+                <input type="tel" name="phone" value="<%= user.phone %>" required>
+                <button type="submit" class="btn btn-success" data-i18n="saveChanges">Save Changes</button>
+            </form>
+        </div>
+
+        <!-- AVAILABLE JOBS (MARKETPLACE) -->
+        <h3 style="color:#2563eb; border-bottom: 2px solid #2563eb; padding-bottom:5px;">Available Jobs (Marketplace)</h3>
+        <% if (openJobs.length === 0) { %>
+            <p style="color:#666; font-style:italic;">No jobs currently open in the marketplace.</p>
+        <% } %>
+        <% openJobs.forEach(function(job) { %>
+            <div class="card" style="<%= job.isUrgent ? 'border: 2px solid #ef4444; background: #fef2f2;' : 'border-left: 5px solid #2563eb;' %>">
+                <div style="display:flex; justify-content:space-between;">
+                    <span class="marketplace-badge">Open Job</span>
+                    <% if (job.isUrgent) { %>
+                        <span style="color:#ef4444; font-weight:bold;">🔥 URGENT</span>
+                    <% } %>
+                </div>
+                <h4 style="margin:5px 0;"><%= job.clientName %></h4>
+                <p style="margin: 5px 0;"><%= job.description %></p>
+                <% if (job.clientVoiceNote) { %>
+                    <div style="background:#eff6ff; padding:10px; border-radius:5px; margin-bottom:10px;">
+                        <small style="color:#1d4ed8; font-weight:bold;">Client's Voice Note:</small>
+                        <audio src="<%= job.clientVoiceNote %>" controls style="display:block; width:100%; margin-top:5px;"></audio>
+                    </div>
+                <% } %>
+                <form action="/api/apply-job" method="POST" style="margin-top:10px;">
+                    <input type="hidden" name="jobId" value="<%= job.id %>">
+                    <button type="submit" class="btn" style="background-color:#2563eb;">Apply for Job</button>
+                </form>
+            </div>
+        <% }) %>
+
+        <h3 data-i18n="incomingJobs">Incoming Jobs</h3>
+        <% if (jobs.length === 0) { %>
+            <p data-i18n="noJobs">No pending jobs.</p>
+        <% } %>
+        <% jobs.forEach(function(job, index) { %>
+            <div class="card" style="<%= job.isUrgent ? 'border: 2px solid #ef4444; background: #fef2f2;' : '' %>">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong data-i18n="client">Client:</strong> <%= job.clientName %>
+                    <span style="font-weight:bold; color:<%= job.status === 'Pending' ? '#d97706' : '#059669' %>">
+                        <%= job.status %>
+                    </span>
+                </div>
+                <% if (job.isUrgent) { %>
+                    <div style="color:#ef4444; font-weight:bold; margin-bottom:5px;" data-i18n="urgentRequest">🔥 URGENT REQUEST</div>
+                <% } %>
+                <p style="margin: 10px 0;"><%= job.description %></p>
+                <% if (job.clientVoiceNote) { %>
+                    <div style="background:#eff6ff; padding:10px; border-radius:5px; margin-bottom:10px;">
+                        <small style="color:#1d4ed8; font-weight:bold;" data-i18n="clientVoice">Client's Voice Note:</small>
+                        <audio src="<%= job.clientVoiceNote %>" controls style="display:block; width:100%; margin-top:5px;"></audio>
+                    </div>
+                <% } %>
+                <div class="voice-recorder-area">
+                    <small style="color:#6b7280; font-weight:bold;" data-i18n="replyVoice">Reply with Voice (Optional):</small>
+                    <button id="workerMicBtn<%= index %>" class="mic-btn" type="button"
+                        onmousedown="startRecording('workerMicBtn<%= index %>', 'workerPreview<%= index %>', 'audioUrlInput<%= index %>')" 
+                        onmouseup="stopRecording('workerMicBtn<%= index %>', 'workerPreview<%= index %>', 'audioUrlInput<%= index %>')"
+                        onmouseleave="cancelRecording('workerMicBtn<%= index %>')"
+                        ontouchstart="startRecording('workerMicBtn<%= index %>', 'workerPreview<%= index %>', 'audioUrlInput<%= index %>')" 
+                        ontouchend="stopRecording('workerMicBtn<%= index %>', 'workerPreview<%= index %>', 'audioUrlInput<%= index %>')">
+                        🎤
+                    </button>
+                    <span class="helper-text" data-i18n="holdRecord">Hold to record</span>
+                    <audio id="workerPreview<%= index %>" controls></audio>
+                </div>
+                <% if (job.status === 'Pending') { %>
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <form action="/api/update-status" method="POST" style="flex:1;">
+                            <input type="hidden" name="jobId" value="<%= job.id %>">
+                            <input type="hidden" name="status" value="Accepted">
+                            <input type="hidden" id="audioUrlInput<%= index %>" name="workerVoiceNote">
+                            <button type="submit" class="btn btn-success" data-i18n="accept">Accept</button>
+                        </form>
+                        <form action="/api/update-status" method="POST" style="flex:1;">
+                            <input type="hidden" name="jobId" value="<%= job.id %>">
+                            <input type="hidden" name="status" value="Rejected">
+                            <button type="submit" class="btn btn-danger" data-i18n="decline">Decline</button>
+                        </form>
+                    </div>
+                <% } else if (job.status === 'Accepted') { %>
+                    <form action="/api/update-status" method="POST" style="margin-top:10px;">
+                        <input type="hidden" name="jobId" value="<%= job.id %>">
+                        <input type="hidden" name="status" value="Completed">
+                        <button type="submit" class="btn" style="background-color:#374151;" data-i18n="markComplete">Mark Complete</button>
+                    </form>
+                <% } %>
+            </div>
+        <% }) %>
+    </div>
+
+    <script>
+        // --- SHARED LANGUAGE DICTIONARY & LOGIC ---
+        const dictionary = {
+            en: { 
+                workerDashboard: "WORKER DASHBOARD", logout: "Logout", myProfile: "My Profile", 
+                online: "🟢 Online", offline: "🔴 Offline", trade: "Trade:", locality: "Locality:", rate: "Rate:",
+                joinChat: "💬 Join Group Chat", chatSubtitle: "Coordinate with other workers", editDetails: "Edit Details",
+                updateProfile: "Update Profile", saveChanges: "Save Changes", incomingJobs: "Incoming Jobs", noJobs: "No pending jobs.",
+                client: "Client:", urgentRequest: "🔥 URGENT REQUEST", clientVoice: "Client's Voice Note:", replyVoice: "Reply with Voice (Optional):",
+                holdRecord: "Hold to record", accept: "Accept", decline: "Decline", markComplete: "Mark Complete"
+            },
+            sw: { 
+                workerDashboard: "DASHIBODI YA MFANYAKAZI", logout: "Ondoka", myProfile: "Wasifu Wangu", 
+                online: "🟢 Mtandaoni", offline: "🔴 Nimeenda", trade: "Kazi:", locality: "Eneo:", rate: "Bei:",
+                joinChat: "💬 Jiunge na Kikundi", chatSubtitle: "Shirikiana na wafanyakazi wengine", editDetails: "Hariri Maelezo",
+                updateProfile: "Sasisha Wasifu", saveChanges: "Hifadhi Mabadiliko", incomingJobs: "Kazi Zinazoingia", noJobs: "Hakuna kazi inayoendelea.",
+                client: "Mteja:", urgentRequest: "🔥 OMBI LA DHARURA", clientVoice: "Kumbukumbu sauti ya Mteja:", replyVoice: "Jibu kwa Sauti (Hiari):",
+                holdRecord: "Bonyeza kurekodi", accept: "Kubali", decline: "Kataa", markComplete: "Maliza Kazi"
+            }
+        };
+        let currentLang = 'en';
+        function toggleLang() {
+            currentLang = currentLang === 'en' ? 'sw' : 'en';
+            const t = dictionary[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerText = t[key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (t[key]) el.placeholder = t[key];
+            });
+            const langBtn = document.getElementById('langBtn');
+            if (langBtn) langBtn.innerText = currentLang === 'en' ? 'Switch to Swahili' : 'Badili Kiingereza';
+        }
+        function toggleEditForm() {
+            const form = document.getElementById('editForm');
+            form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        }
+        function toggleOtherInput() {
+            const tradeSelect = document.getElementById('editTradeSelect');
+            const otherInputDiv = document.getElementById('editOtherDiv');
+            otherInputDiv.style.display = tradeSelect.value === 'Other' ? 'block' : 'none';
+        }
+        let mediaRecorder; let audioChunks = [];
+        async function startRecording(btnId, previewId, inputId) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return alert("Recording not supported.");
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const formData = new FormData(); formData.append('audio', audioBlob, 'recording.webm');
+                    const btn = document.getElementById(btnId); btn.innerHTML = '⏳';
+                    try {
+                        const response = await fetch('/api/upload-audio', { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error('Upload failed');
+                        const data = await response.json();
+                        document.getElementById(previewId).src = data.audioUrl;
+                        document.getElementById(previewId).style.display = 'block';
+                        document.getElementById(inputId).value = data.audioUrl;
+                        btn.innerHTML = '✅';
+                    } catch (err) { console.error(err); alert('Upload failed'); btn.innerHTML = '🎤'; }
+                };
+                mediaRecorder.start();
+                const btn = document.getElementById(btnId); btn.classList.add('recording'); btn.innerHTML = '🔴';
+            } catch (err) { console.error(err); alert("Microphone denied."); }
+        }
+        function stopRecording(btnId, previewId, inputId) {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                document.getElementById(btnId).classList.remove('recording');
+            }
+        }
+        function cancelRecording(btnId) {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                document.getElementById(btnId).classList.remove('recording'); document.getElementById(btnId).innerHTML = '🎤';
+            }
+        }
+
+        // --- REAL-TIME UPDATES ---
+        const socket = io();
+        socket.on('new_open_job', (job) => {
+            alert('New job posted in the marketplace!');
+            location.reload();
+        });
+    </script>
+</body>
+</html>

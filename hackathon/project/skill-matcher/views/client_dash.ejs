@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Client Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background-color: #e6fffa; /* LIGHT TEAL APPLIED */ margin: 0; padding: 0; min-height: 100vh; }
+        .container { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .badge { background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; color: white; width: 100%; background-color: #2563eb; font-size: 1rem; }
+        .btn:hover { background-color: #1d4ed8; }
+        .btn:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        .btn-mpesa { background-color: #4CAF50; }
+        .btn-mpesa:hover { background-color: #388E3C; }
+        input[type="text"], textarea, select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
+        
+        .voice-recorder-area { margin-top: 15px; text-align: center; padding: 10px; background: #f9fafb; border-radius: 8px; border: 1px dashed #d1d5db; }
+        .mic-btn { width: 60px; height: 60px; border-radius: 50%; border: none; background-color: #e5e7eb; color: #374151; font-size: 24px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; user-select: none; }
+        .mic-btn.recording { background-color: #ef4444; color: white; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .helper-text { display: block; margin-top: 5px; font-size: 0.8rem; color: #6b7280; }
+        audio { width: 100%; margin-top: 10px; display: none; }
+        
+        .status-pending { color: #d97706; font-weight: bold; }
+        .status-accepted { color: #059669; font-weight: bold; }
+        .status-open { color: #2563eb; font-weight: bold; }
+        .status-completed { color: #374151; font-weight: bold; }
+        .verified { background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; vertical-align: middle; }
+        .online-dot { height: 10px; width: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .lang-switch { font-size: 0.8rem; cursor: pointer; text-decoration: underline; color: white; margin-right: 15px; }
+        .review-box { background: #f9fafb; padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 0.85rem; border-left: 3px solid #e5e7eb; }
+    </style>
+    <!-- SOCKET.IO CLIENT -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <header style="background-color:#2563eb; padding:15px; display:flex; justify-content:space-between; align-items:center; color:white;">
+        <h2 style="margin:0;" data-i18n="clientDashboard">CLIENT DASHBOARD</h2>
+        <div>
+            <span id="langBtn" onclick="toggleLang()" class="lang-switch">Switch to Swahili</span>
+            <a href="/" style="color:white; text-decoration:none; font-size:0.9em;" data-i18n="logout">Logout</a>
+        </div>
+    </header>
+
+    <div class="container">
+        <p style="color:#666; margin-bottom:20px;" data-i18n="welcomeMsg">Hello, <strong><%= user.name %></strong>.</p>
+
+        <div class="card">
+            <h3 data-i18n="findWorker">Find a Worker</h3>
+            <form action="/dashboard/client" method="GET">
+                <input type="text" name="trade" placeholder="Job Type (e.g. Plumbing)" value="<%= query.trade || '' %>" data-i18n-placeholder="jobTypePH">
+                <input type="text" name="locality" placeholder="Locality" value="<%= query.locality || '' %>" data-i18n-placeholder="localityPH">
+                <button id="searchBtn" type="submit" class="btn" data-i18n="search">Search</button>
+            </form>
+        </div>
+
+        <% workers.forEach(function(worker) { %>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong><%= worker.name %></strong>
+                        <div style="margin-top:2px;">
+                            <% if (worker.rating >= 4.5) { %><span class="verified">✅ Verified</span><% } %>
+                            <span style="color:#fbbf24;">⭐ <%= worker.rating.toFixed(1) %></span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="badge"><%= worker.trade %></span>
+                        <div style="margin-top:5px; font-size:0.8rem; color:#666;">
+                            <% if (worker.isAvailable) { %>
+                                <span class="online-dot"></span><span data-i18n="online">Online</span>
+                            <% } else { %>
+                                🔴 <span data-i18n="offline">Offline</span>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+                <p><span data-i18n="locality">Locality:</span> <%= worker.locality %></p>
+                <p><span data-i18n="rate">Rate:</span> Ksh <%= worker.rate %> <%= worker.rateType %></p>
+                
+                <!-- ENHANCED FEATURE: Display Reviews -->
+                <% if (worker.reviews && worker.reviews.length > 0) { %>
+                    <div style="margin-top:10px; padding-top:10px; border-top:1px solid #eee;">
+                        <small style="color:#666; font-weight:bold;">Recent Reviews:</small>
+                        <% worker.reviews.slice(-2).forEach(function(review) { %>
+                            <div class="review-box">
+                                <div><span style="color:#fbbf24;">⭐ <%= review.rating %></span> <em>"<%= review.comment %>"</em></div>
+                                <div style="font-size:0.75rem; color:#999;">- <%= review.client %></div>
+                            </div>
+                        <% }) %>
+                    </div>
+                <% } %>
+                
+                <form action="/api/book" method="POST" style="margin-top:15px;">
+                    <input type="hidden" name="workerId" value="<%= worker.id %>">
+                    <input type="hidden" id="audioUrlInput<%= worker.id %>" name="clientVoiceNote">
+                    
+                    <textarea name="description" rows="2" placeholder="Describe the issue..." required data-i18n-placeholder="descPH"></textarea>
+                    
+                    <div style="margin: 10px 0;">
+                        <label>
+                            <input type="checkbox" name="isUrgent"> 
+                            <span class="urgent-label" style="color:#ef4444; font-weight:bold;" data-i18n="markUrgent">Mark as Urgent</span>
+                        </label>
+                    </div>
+
+                    <!-- FEATURE: Post to Marketplace -->
+                    <div style="margin-bottom: 10px;">
+                        <label style="display:flex; align-items:center; cursor:pointer;">
+                            <input type="checkbox" name="postToMarket" style="width:auto; margin-right:8px;"> 
+                            <span style="font-weight:bold; color:#2563eb;">Post to Marketplace (Open to All)</span>
+                        </label>
+                        <small style="color:#888; margin-left:24px;">Ignores specific worker above.</small>
+                    </div>
+                    
+                    <div class="voice-recorder-area">
+                        <button id="clientMicBtn<%= worker.id %>" class="mic-btn" type="button"
+                            onmousedown="startRecording('clientMicBtn<%= worker.id %>', 'clientPreview<%= worker.id %>', 'audioUrlInput<%= worker.id %>')" 
+                            onmouseup="stopRecording('clientMicBtn<%= worker.id %>', 'clientPreview<%= worker.id %>', 'audioUrlInput<%= worker.id %>')"
+                            onmouseleave="cancelRecording('clientMicBtn<%= worker.id %>')"
+                            ontouchstart="startRecording('clientMicBtn<%= worker.id %>', 'clientPreview<%= worker.id %>', 'audioUrlInput<%= worker.id %>')" 
+                            ontouchend="stopRecording('clientMicBtn<%= worker.id %>', 'clientPreview<%= worker.id %>', 'audioUrlInput<%= worker.id %>')">
+                            🎤
+                        </button>
+                        <span class="helper-text" data-i18n="holdRecord">Hold to record details</span>
+                        <audio id="clientPreview<%= worker.id %>" controls></audio>
+                    </div>
+
+                    <button type="submit" class="btn book-btn-text" data-i18n="requestBooking">Request Booking</button>
+                </form>
+            </div>
+        <% }) %>
+
+        <h3 data-i18n="myRequests">My Requests</h3>
+        <% jobs.forEach(function(job) { %>
+            <% const worker = allWorkers.find(w => w.id === job.workerId) || { name: 'Any Worker' }; %>
+            <div class="card">
+                <p><span data-i18n="status">Status:</span> <span class="status-<%= job.status.toLowerCase() %>"><%= job.status %></span></p>
+                <p><%= job.description %></p>
+                
+                <% if (job.clientVoiceNote) { %>
+                    <audio src="<%= job.clientVoiceNote %>" controls style="display:block; width:100%; margin-top:10px;"></audio>
+                <% } %>
+
+                <% if (job.status === 'Pending' && worker) { %>
+                    <div style="background:#f0fdf4; padding:10px; border-radius:5px; margin-top:10px; border:1px solid #22c55e;">
+                        <strong data-i18n="acceptedBy">Requested to:</strong> <%= worker.name %><br>
+                        <strong data-i18n="contact">Contact:</strong> <a href="tel:<%= worker.phone %>"><%= worker.phone %></a>
+                    </div>
+                <% } %>
+
+                <% if (job.status === 'Accepted' && worker) { %>
+                    <div style="background:#f0fdf4; padding:10px; border-radius:5px; margin-top:10px; border:1px solid #22c55e;">
+                        <strong data-i18n="acceptedBy">Accepted by:</strong> <%= worker.name %><br>
+                        <strong data-i18n="contact">Contact:</strong> <a href="tel:<%= worker.phone %>"><%= worker.phone %></a>
+                        <% if (job.workerVoiceNote) { %>
+                            <div style="margin-top:10px;">
+                                <small style="color:#059669; font-weight:bold;" data-i18n="workerVoice">Worker's Reply:</small>
+                                <audio src="<%= job.workerVoiceNote %>" controls style="display:block; width:100%; margin-top:5px;"></audio>
+                            </div>
+                        <% } %>
+                    </div>
+                <% } %>
+
+                <% if (job.status === 'Completed' || job.status === 'Paid') { %>
+                    <div style="margin-top:15px; padding-top:10px; border-top:1px dashed #ccc;">
+                        
+                        <!-- FIXED: AJAX MPESA PAYMENT -->
+                        <% if (job.status !== 'Paid') { %>
+                            <!-- Uses onsubmit to handle AJAX -->
+                            <form onsubmit="handleMpesaPayment(event, '<%= job.id %>')" id="mpesaForm<%= job.id %>" style="margin-bottom:10px;">
+                                <input type="hidden" name="phone" value="<%= user.phone %>"> 
+                                <input type="hidden" name="amount" value="500"> 
+                                <input type="hidden" name="jobId" value="<%= job.id %>">
+                                <button id="mpesaBtn<%= job.id %>" type="submit" class="btn btn-mpesa">💳 Pay via M-Pesa</button>
+                            </form>
+                        <% } else { %>
+                            <p style="color:green; font-weight:bold;">✅ Paid</p>
+                        <% } %>
+
+                        <!-- ENHANCED FEATURE: Rating with Text Review -->
+                        <small style="color:#666;" data-i18n="rateWorkerMsg">How was <%= worker.name %>?</small>
+                        <form action="/api/rate-worker" method="POST">
+                            <input type="hidden" name="workerId" value="<%= job.workerId %>">
+                            <div style="display:flex; gap:5px; align-items:center; margin-top:5px;">
+                                <select name="rating" style="width:auto; padding:5px;">
+                                    <option value="5">⭐⭐⭐⭐⭐</option>
+                                    <option value="4">⭐⭐⭐⭐</option>
+                                    <option value="3">⭐⭐⭐</option>
+                                    <option value="2">⭐⭐</option>
+                                    <option value="1">⭐</option>
+                                </select>
+                                <button type="submit" class="btn" style="width:auto; padding:5px 15px; background:#fbbf24; color:black;" data-i18n="rateBtn">Rate</button>
+                            </div>
+                            <textarea name="comment" rows="2" placeholder="Write a short review..." style="margin-top:5px; width:100%; padding:5px;"></textarea>
+                        </form>
+                    </div>
+                <% } %>
+            </div>
+        <% }) %>
+    </div>
+
+    <script>
+        // --- SHARED LANGUAGE DICTIONARY & LOGIC ---
+        const dictionary = {
+            en: { 
+                clientDashboard: "CLIENT DASHBOARD", logout: "Logout", welcomeMsg: "Hello,", findWorker: "Find a Worker",
+                jobTypePH: "Job Type (e.g. Plumbing)", localityPH: "Locality", search: "Search",
+                online: "Online", offline: "Offline", locality: "Locality:", rate: "Rate:",
+                markUrgent: "Mark as Urgent", holdRecord: "Hold to record details", requestBooking: "Request Booking",
+                myRequests: "My Requests", status: "Status:", acceptedBy: "Accepted by:", contact: "Contact:",
+                workerVoice: "Worker's Reply:", rateWorkerMsg: "How was", rateBtn: "Rate"
+            },
+            sw: { 
+                clientDashboard: "DASHIBODI YA MTEJA", logout: "Ondoka", welcomeMsg: "Jambo,", findWorker: "Tafuta Mfanyakazi",
+                jobTypePH: "Aina ya Kazi (mf. Bomba)", localityPH: "Eneo", search: "Tafuta",
+                online: "Mtandaoni", offline: "Nimeenda", locality: "Eneo:", rate: "Bei:",
+                markUrgent: "Alama kama Dharura", holdRecord: "Bonyeza kurekodi maelezo", requestBooking: "Oda Huduma",
+                myRequests: "Oda Zangu", status: "Hali:", acceptedBy: "Imekubaliwa na:", contact: "Mawasiliano:",
+                workerVoice: "Jibu la Mfanyakazi:", rateWorkerMsg: "Alivyejipa", rateBtn: "Pima"
+            }
+        };
+
+        let currentLang = 'en';
+
+        function toggleLang() {
+            currentLang = currentLang === 'en' ? 'sw' : 'en';
+            const t = dictionary[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerText = t[key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (t[key]) el.placeholder = t[key];
+            });
+            const langBtn = document.getElementById('langBtn');
+            if (langBtn) langBtn.innerText = currentLang === 'en' ? 'Switch to Swahili' : 'Badili Kiingereza';
+        }
+
+        /* --- RECORDING LOGIC --- */
+        let mediaRecorder; let audioChunks = [];
+        async function startRecording(btnId, previewId, inputId) {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return alert("Recording not supported.");
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream); audioChunks = [];
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const formData = new FormData(); formData.append('audio', audioBlob, 'recording.webm');
+                    const btn = document.getElementById(btnId); btn.innerHTML = '⏳';
+                    try {
+                        const response = await fetch('/api/upload-audio', { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error('Upload failed');
+                        const data = await response.json();
+                        document.getElementById(previewId).src = data.audioUrl;
+                        document.getElementById(previewId).style.display = 'block';
+                        document.getElementById(inputId).value = data.audioUrl;
+                        btn.innerHTML = '✅';
+                    } catch (err) { console.error(err); alert('Upload failed'); btn.innerHTML = '🎤'; }
+                };
+                mediaRecorder.start();
+                const btn = document.getElementById(btnId); btn.classList.add('recording'); btn.innerHTML = '🔴';
+            } catch (err) { console.error(err); alert("Microphone denied."); }
+        }
+        function stopRecording(btnId, previewId, inputId) {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                document.getElementById(btnId).classList.remove('recording');
+            }
+        }
+        function cancelRecording(btnId) {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop(); mediaRecorder.stream.getTracks().forEach(t => t.stop());
+                document.getElementById(btnId).classList.remove('recording'); document.getElementById(btnId).innerHTML = '🎤';
+            }
+        }
+
+        /* --- FIXED: MPESA PAYMENT HANDLER --- */
+        async function handleMpesaPayment(event, jobId) {
+            event.preventDefault(); // Stop page reload
+
+            const form = event.target;
+            const btn = document.getElementById(`mpesaBtn${jobId}`);
+            const originalText = btn.innerText;
+
+            // Show loading state
+            btn.innerText = "⏳ Processing...";
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/mpesa/pay', {
+                    method: 'POST',
+                    body: new FormData(form)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message); // Show success message
+                    // Reload page after 3 seconds to update UI
+                    setTimeout(() => {
+                        location.reload(); 
+                    }, 3000);
+                } else {
+                    alert("Payment failed: " + data.message);
+                    btn.innerText = originalText; // Reset button
+                    btn.disabled = false;
+                }
+
+            } catch (error) {
+                console.error("Payment Error:", error);
+                alert("An error occurred. Please try again.");
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        /* --- SOCKET.IO CLIENT LOGIC --- */
+        const socket = io();
+
+        socket.on('job_status_update', (job) => {
+            alert(`Job Status Updated: ${job.status}`);
+            location.reload();
+        });
+
+        socket.on('worker_applied', (data) => {
+            alert(`${data.workerName} applied for your job!`);
+            location.reload();
+        });
+
+        socket.on('payment_received', (data) => {
+            alert(`Payment of Ksh ${data.amount} received successfully!`);
+            location.reload();
+        });
+    </script>
+</body>
+</html>

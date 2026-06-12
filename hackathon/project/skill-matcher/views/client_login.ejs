@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Client Login</title>
+    <style>
+        /* UPDATED BACKGROUND STYLE (Light Teal) */
+        body { 
+            font-family: sans-serif; 
+            background-color: #e6fffa; /* Light Teal */
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0;
+            min-height: 100vh; /* Ensures color covers full screen */
+        }
+        
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { text-align: center; color: #2563eb; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 10px; background-color: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem; }
+        .toggle-text { text-align: center; margin-top: 15px; font-size: 0.9rem; }
+        .toggle-text a { color: #2563eb; text-decoration: none; font-weight: bold; cursor: pointer; }
+        .error { color: red; text-align: center; margin-bottom: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="formTitle">Client Login</h2>
+        
+        <% if (error) { %>
+            <div class="error"><%= error %></div>
+        <% } %>
+
+        <!-- LOGIN FORM -->
+        <form id="loginForm" action="/login/client" method="POST">
+            <label>Name:</label>
+            <input type="text" name="name" required>
+            <button type="submit" class="btn">Login</button>
+        </form>
+
+        <!-- REGISTER FORM (Hidden by default) -->
+        <form id="registerForm" class="hidden" action="/register/client" method="POST">
+            <label>Full Name:</label>
+            <input type="text" name="name" required>
+            
+            <label>Phone Number:</label>
+            <input type="tel" name="phone" required placeholder="e.g. 0712345678">
+            
+            <label>Locality / Area:</label>
+            <input type="text" name="locality" required placeholder="e.g. Westlands">
+            
+            <button type="submit" class="btn" style="background-color: #10b981;">Register</button>
+        </form>
+
+        <div class="toggle-text">
+            <span id="toggleText">Don't have an account?</span> 
+            <a onclick="toggleForms()">Register here</a>
+        </div>
+        
+        <div style="text-align:center; margin-top:20px;">
+            <a href="/" style="color:#666; font-size:0.8rem;">Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        function toggleForms() {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const title = document.getElementById('formTitle');
+            const toggleText = document.getElementById('toggleText');
+
+            if (loginForm.classList.contains('hidden')) {
+                // Switch to Login
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                title.innerText = "Client Login";
+                toggleText.innerHTML = "Don't have an account? <a onclick=\"toggleForms()\">Register here</a>";
+            } else {
+                // Switch to Register
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                title.innerText = "Client Registration";
+                toggleText.innerHTML = "Already have an account? <a onclick=\"toggleForms()\">Login here</a>";
+            }
+        }
+    </script>
+</body>
+</html>

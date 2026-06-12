@@ -1,0 +1,12 @@
+body { font-family: sans-serif; background-color: #f4f4f9; margin: 0; padding: 0; color: #333; }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+header { background: #2563eb; color: white; padding: 15px; text-align: center; }
+.btn { display: block; width: 100%; padding: 10px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px; text-decoration: none; text-align: center; }
+.btn-secondary { background: white; color: #2563eb; border: 1px solid #2563eb; }
+.btn-danger { background: #ef4444; }
+.btn-success { background: #10b981; }
+input, select, textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+.card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 15px; }
+.badge { background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+.status-pending { color: #b45309; font-weight: bold; }
+.status-accepted { color: #15803d; font-weight: bold; }
